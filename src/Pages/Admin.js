@@ -1,100 +1,76 @@
-import { getUsers } from "../utils/storage";
-import "../styles/dashboard.css";
+import { supabase } from "../supabase";
+import { useEffect, useState } from "react";
+import "../styles/admin.css";
 
 export default function Admin() {
-  const admin = JSON.parse(localStorage.getItem("currentAdmin"));
-  if (!admin) {
-    window.location.href = "/login";
-    return null;
-  }
+  const [users, setUsers] = useState([]);
 
-  const users = getUsers();
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-  const countJuz = (email) => {
-    const progress =
-      JSON.parse(localStorage.getItem(`progress_${email}`)) || {};
-    return Object.values(progress).filter(Boolean).length;
+  const loadUsers = async () => {
+    const { data: usersData } = await supabase
+      .from("users")
+      .select("id, name, email");
+
+    if (!usersData) return;
+
+    const usersWithProgress = await Promise.all(
+      usersData.map(async (u) => {
+        const { data: progress } = await supabase
+          .from("progress")
+          .select("juz")
+          .eq("user_id", u.id)
+          .eq("completed", true);
+
+        const completed = progress ? progress.length : 0;
+        const percent = Math.round((completed / 30) * 100);
+
+        return { ...u, completed, percent };
+      })
+    );
+
+    setUsers(usersWithProgress);
   };
 
   return (
     <div className="dashboard-wrapper">
-      <div className="dashboard">
-        <h2 style={{ marginBottom: "5px" }}>Admin Panel</h2>
-        <p style={{ color: "#666", marginBottom: "20px" }}>
-          Monitor users progress and activity
-        </p>
+      <div className="admin-dashboard">
+        <h2>Admin Panel</h2>
+        <p className="subtitle">Qur'an Reading Progress</p>
 
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              background: "#fff",
-              borderRadius: "8px",
-              overflow: "hidden",
-            }}
-          >
-            <thead style={{ background: "#2c5364", color: "#fff" }}>
-              <tr>
-                <th style={thStyle}>Name</th>
-                <th style={thStyle}>Email</th>
-                <th style={thStyle}>Progress</th>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Juz Read</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {users.map(u => (
+              <tr key={u.id}>
+                <td>{u.name}</td>
+                <td>{u.email}</td>
+                <td><strong>{u.completed}/30</strong></td>
+                <td>
+                  <div className="progress-bar">
+                    <div
+                      className="progress-fill"
+                      style={{ width: `${u.percent}%` }}
+                    />
+                  </div>
+                  <small>{u.percent}%</small>
+                </td>
               </tr>
-            </thead>
+            ))}
+          </tbody>
+        </table>
 
-            <tbody>
-              {users.map((u, i) => {
-                const completed = countJuz(u.email);
-                const percent = Math.round((completed / 30) * 100);
-
-                return (
-                  <tr key={i} style={{ borderBottom: "1px solid #eee" }}>
-                    <td style={tdStyle}>{u.name}</td>
-                    <td style={tdStyle}>{u.email}</td>
-                    <td style={tdStyle}>
-                      <strong>{completed}/30</strong>
-                      <div style={progressBar}>
-                        <div
-                          style={{
-                            ...progressFill,
-                            width: `${percent}%`,
-                          }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );
 }
-
-/* === STYLES === */
-const thStyle = {
-  padding: "12px",
-  textAlign: "left",
-  fontSize: "14px",
-};
-
-const tdStyle = {
-  padding: "12px",
-  fontSize: "14px",
-};
-
-const progressBar = {
-  marginTop: "6px",
-  width: "100%",
-  height: "6px",
-  background: "#e0e0e0",
-  borderRadius: "4px",
-};
-
-const progressFill = {
-  height: "100%",
-  background: "#2c5364",
-  borderRadius: "4px",
-};

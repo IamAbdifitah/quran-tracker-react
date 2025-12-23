@@ -1,55 +1,87 @@
-import { useState } from "react";
-import { getCurrentUser, logout } from "../utils/storage";
+import { supabase } from "../supabase";
+import { useEffect, useState } from "react";
 import "../styles/dashboard.css";
 
 export default function Dashboard() {
-  const user = getCurrentUser();
+  const [completedJuz, setCompletedJuz] = useState([]);
+  const juzList = Array.from({ length: 30 }, (_, i) => i + 1);
 
-  // ❗ Hook mar walba waa in kor la yeeraa
-  const storageKey = user ? `progress_${user.email}` : null;
+  // ✅ MARKA PAGE LOAD GARO
+  useEffect(() => {
+    loadProgress();
+  }, []);
 
-  const [progress, setProgress] = useState(
-    storageKey
-      ? JSON.parse(localStorage.getItem(storageKey)) || {}
-      : {}
-  );
+  // ✅ LOAD USER JUZ PROGRESS (FIXED)
+  const loadProgress = async () => {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) {
+      window.location.href = "/";
+      return;
+    }
 
-  // kadib ayaad condition gelin kartaa
-  if (!user) {
-    window.location.href = "/login";
-    return null;
-  }
+    const { data, error } = await supabase
+      .from("progress")              // ✅ table sax ah
+      .select("juz")
+      .eq("user_id", authData.user.id)
+      .eq("completed", true);
 
-  const markJuz = (juz) => {
-    const updated = { ...progress, [juz]: !progress[juz] };
-    setProgress(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
+    if (error) {
+      console.error(error);
+      setCompletedJuz([]);
+      return;
+    }
+
+    setCompletedJuz(data ? data.map(j => j.juz) : []);
+  };
+
+  // ⚡ UI DEGDEG + SAVE BACKGROUND
+  const completeJuz = (juz) => {
+    if (completedJuz.includes(juz)) return;
+
+    // UI marka hore
+    setCompletedJuz(prev => [...prev, juz]);
+
+    saveToDatabase(juz);
+  };
+
+  const saveToDatabase = async (juz) => {
+    const { data: authData } = await supabase.auth.getUser();
+    if (!authData?.user) return;
+
+    await supabase.from("progress").insert({
+      user_id: authData.user.id,
+      juz: juz,
+      completed: true,
+    });
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
   };
 
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard">
-        <h2>Welcome, {user.name}</h2>
+        <h2>📖 Qur'an Reading Dashboard</h2>
 
         <div className="juz-grid">
-          {[...Array(30)].map((_, i) => (
-            <button
-              key={i}
-              className={progress[i + 1] ? "done" : ""}
-              onClick={() => markJuz(i + 1)}
-            >
-              Juz {i + 1}
-            </button>
-          ))}
+          {juzList.map(juz => {
+            const done = completedJuz.includes(juz);
+            return (
+              <button
+                key={juz}
+                className={`juz-btn ${done ? "done" : ""}`}
+                disabled={done}
+                onClick={() => completeJuz(juz)}
+              >
+                {done ? `✔ Juz ${juz}` : `Juz ${juz}`}
+              </button>
+            );
+          })}
         </div>
 
-        <button
-          className="logout"
-          onClick={() => {
-            logout();
-            window.location.href = "/login";
-          }}
-        >
+        <button className="logout" onClick={logout}>
           Logout
         </button>
       </div>

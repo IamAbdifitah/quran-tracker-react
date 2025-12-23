@@ -1,45 +1,54 @@
+import { supabase } from "../supabase";
 import { useState } from "react";
-import { getUsers, setCurrentUser } from "../utils/storage";
 import { Link } from "react-router-dom";
 import "../styles/form.css";
 
 export default function Login() {
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    const { email, password } = e.target;
+    const email = e.target.email.value;
+    const password = e.target.password.value;
 
-    /* ================= ADMIN LOGIN ================= */
-    if (
-      email.value === "admin@email.com" &&
-      password.value === "admin123"
-    ) {
-      localStorage.setItem(
-        "currentAdmin",
-        JSON.stringify({ email: email.value })
-      );
-      window.location.href = "/Admin";
-      return;
+    try {
+      setLoading(true);
+
+      // 1️⃣ Login
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // 2️⃣ Get user role
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", data.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        throw new Error("User profile not found");
+      }
+
+      // 3️⃣ Redirect by role (AUTO)
+      if (profile.role === "admin") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/dashboard";
+      }
+
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
-
-    /* ================= USER LOGIN ================= */
-    const users = getUsers();
-
-    const user = users.find(
-      (u) =>
-        u.email === email.value &&
-        u.password === password.value
-    );
-
-    if (!user) {
-      setError("Invalid email or password");
-      return;
-    }
-
-    setCurrentUser(user);
-    window.location.href = "/dashboard";
   };
 
   return (
@@ -54,6 +63,7 @@ export default function Login() {
             placeholder="Email"
             required
           />
+
           <input
             name="password"
             type="password"
@@ -61,16 +71,17 @@ export default function Login() {
             required
           />
 
-          <button type="submit">Login</button>
+          <button disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
+          </button>
         </form>
 
         {error && <p className="error">{error}</p>}
 
-        <div className="link">
-          <Link to="/register">
-            Create new account
-          </Link>
-        </div>
+        <p>
+          Don’t have an account?
+          <Link to="/register"> Create Account</Link>
+        </p>
       </div>
     </div>
   );

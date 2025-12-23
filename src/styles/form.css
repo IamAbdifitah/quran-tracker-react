@@ -1,13 +1,21 @@
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .form-container {
   background: #fff;
+  width: 100%;
+  max-width: 380px;
   padding: 30px;
-  width: 350px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  text-align: center;
 }
 
 .form-container h2 {
-  text-align: center;
   margin-bottom: 20px;
   color: #2c5364;
 }
@@ -16,7 +24,7 @@
   width: 100%;
   padding: 12px;
   margin-bottom: 15px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #ccc;
   font-size: 14px;
 }
@@ -24,102 +32,33 @@
 .form-container button {
   width: 100%;
   padding: 12px;
-  border: none;
-  border-radius: 6px;
   background: #2c5364;
-  color: white;
-  font-size: 16px;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
   cursor: pointer;
 }
 
 .form-container button:hover {
-  background: #203a43;
+  background: #244552;
 }
 
 .error {
-  color: red;
-  text-align: center;
   margin-top: 10px;
+  color: crimson;
+  font-size: 14px;
 }
 
 .link {
-  text-align: center;
   margin-top: 15px;
 }
 
 .link a {
   color: #2c5364;
   text-decoration: none;
-  font-weight: 500;
+  font-size: 14px;
 }
-
-.form-container {
-  width: 100%;
-  max-width: 380px;
-  padding: 24px;
-}
-
-@media (max-width: 480px) {
-  .form-container {
-    padding: 20px;
-    border-radius: 10px;
-  }
-
-  .form-container h2 {
-    font-size: 22px;
-  }
-
-  .form-container button {
-    font-size: 15px;
-  }
-}
-
-/* === BASE (already existing styles assumed) === */
-
-.form-container {
-  width: 100%;
-  max-width: 380px;
-  margin: auto;
-  padding: 30px;
-}
-
-/* === MOBILE (phones) === */
-@media (max-width: 480px) {
-  .form-container {
-    padding: 20px;
-    margin: 20px;
-  }
-
-  .form-container h2 {
-    font-size: 22px;
-  }
-
-  .form-container input {
-    font-size: 14px;
-    padding: 12px;
-  }
-
-  .form-container button {
-    padding: 12px;
-    font-size: 15px;
-  }
-
-  .link a {
-    font-size: 14px;
-  }
-}
-
-/* === TABLET === */
-@media (max-width: 768px) {
-  .form-container {
-    max-width: 420px;
-  }
-}
-
-.auth-wrapper {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f7fa; /* optional */
+.link a:hover {
+  text-decoration: underline;
 }
