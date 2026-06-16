@@ -13,25 +13,36 @@ export default function Dashboard() {
 
   // ✅ LOAD USER JUZ PROGRESS (FIXED)
   const loadProgress = async () => {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) {
-      window.location.href = "/";
-      return;
-    }
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error("getUser error:", authError);
+        window.location.href = "/";
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from("progress")              // ✅ table sax ah
-      .select("juz")
-      .eq("user_id", authData.user.id)
-      .eq("completed", true);
+      if (!authData?.user) {
+        window.location.href = "/";
+        return;
+      }
 
-    if (error) {
-      console.error(error);
+      const { data, error } = await supabase
+        .from("progress")
+        .select("juz")
+        .eq("user_id", authData.user.id)
+        .eq("completed", true);
+
+      if (error) {
+        console.error("progress fetch error:", error);
+        setCompletedJuz([]);
+        return;
+      }
+
+      setCompletedJuz(data ? data.map(j => j.juz) : []);
+    } catch (err) {
+      console.error("loadProgress error:", err);
       setCompletedJuz([]);
-      return;
     }
-
-    setCompletedJuz(data ? data.map(j => j.juz) : []);
   };
 
   // ⚡ UI DEGDEG + SAVE BACKGROUND
@@ -45,14 +56,24 @@ export default function Dashboard() {
   };
 
   const saveToDatabase = async (juz) => {
-    const { data: authData } = await supabase.auth.getUser();
-    if (!authData?.user) return;
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error("getUser error on save:", authError);
+        return;
+      }
+      if (!authData?.user) return;
 
-    await supabase.from("progress").insert({
-      user_id: authData.user.id,
-      juz: juz,
-      completed: true,
-    });
+      const { error } = await supabase.from("progress").insert({
+        user_id: authData.user.id,
+        juz: juz,
+        completed: true,
+      });
+
+      if (error) console.error("insert progress error:", error);
+    } catch (err) {
+      console.error("saveToDatabase error:", err);
+    }
   };
 
   const logout = async () => {

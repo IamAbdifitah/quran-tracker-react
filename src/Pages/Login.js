@@ -23,7 +23,10 @@ export default function Login() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Sign-in error:", error);
+        throw error;
+      }
 
       // 2️⃣ Get user role
       const { data: profile, error: profileError } = await supabase
@@ -33,6 +36,7 @@ export default function Login() {
         .single();
 
       if (profileError || !profile) {
+        console.error("Profile fetch error:", profileError, profile);
         await supabase.auth.signOut();
         throw new Error("User profile not found");
       }
@@ -45,7 +49,8 @@ export default function Login() {
       }
 
     } catch (err) {
-      setError(err.message || "Login failed");
+      console.error("Login error:", err);
+      setError(err?.message || String(err) || "Login failed");
     } finally {
       setLoading(false);
     }
